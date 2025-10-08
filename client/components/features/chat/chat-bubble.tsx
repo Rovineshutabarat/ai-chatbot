@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Copy, Share, ThumbsDown, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+
 type ChatBubbleProps = {
   type: "USER" | "AI";
   content: string;
@@ -28,13 +32,21 @@ const ChatBubble = ({ type, content }: ChatBubbleProps) => {
       <div className={cn("flex flex-1", isUser && "justify-end")}>
         <div
           className={cn(
-            "rounded-2xl border p-4 max-w-3xl font-sans",
+            "rounded-2xl border p-4 max-w-3xl font-mono",
             isUser
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-foreground",
           )}
         >
-          <p className="mb-4">{content}</p>
+          <div className="prose dark:prose-invert max-w-none">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+
 
           <div className="flex items-center gap-2">
             <Button

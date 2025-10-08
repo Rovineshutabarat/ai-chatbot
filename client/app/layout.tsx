@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import React from "react";
 import AppLayout from "@/components/layouts/app-layout";
+import Script from "next/script";
+import "highlight.js/styles/github-dark.css";
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,9 +19,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body className="dark">
-       <>
-         <AppLayout>{children}</AppLayout>
-       </>
+        <>
+          <AppLayout>{children}</AppLayout>
+        </>
       </body>
     </html>
   );

@@ -213,6 +213,20 @@ body {
   letter-spacing: var(--tracking-normal);
 }
 
+.prose p {
+  margin-bottom: 1rem;
+}
+
+.prose h2, .prose h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose pre {
+  margin: 1rem 0;
+}
+
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
