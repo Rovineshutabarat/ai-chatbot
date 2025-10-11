@@ -22,22 +22,47 @@ const ChatPage = () => {
     if (!scrollRef.current) return;
 
     const scrollEl = scrollRef.current.querySelector(
-      "[data-radix-scroll-area-viewport]",
-    );
-    if (scrollEl) {
-      (scrollEl as HTMLElement).scrollTo({
-        top: (scrollEl as HTMLElement).scrollHeight,
-        behavior: "smooth",
-      });
-    }
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement | null;
+
+    if (!scrollEl) return;
+
+    requestAnimationFrame(() => {
+      const distanceToBottom =
+        scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+
+      const isAtBottom = distanceToBottom < 30;
+
+      if (isAtBottom) {
+        scrollEl.scrollTo({
+          top: scrollEl.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    });
   }, [chatList]);
+
+
+  const scrollToBottom = () => {
+    const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    });
+  };
+
+
 
   async function handleSubmit() {
     if (!message.trim()) return;
     addChat({ type: "USER", content: message });
     setMessage("");
-
-    setChatList((prev) => [...prev, { type: "AI", content: "" }]);
 
     const prompt = `
 Kamu adalah asisten yang menulis jawaban dalam format Markdown yang rapi dan mudah dibaca.
@@ -57,48 +82,59 @@ Aturan format:
 Pertanyaan:
 ${message}
 `;
-
     try {
       setIsProcessing(true);
+
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt }),
+        body: JSON.stringify({ prompt }),
       });
 
       if (!res.body) {
-        console.error("Tidak ada stream dari server");
+        addChat({ type: "AI", content: "Something went wrong." });
         return;
       }
-      console.log(res);
+
+      setChatList((prev) => [...prev, { type: "AI", content: "" }]);
+
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let fullText = "";
 
       while (true) {
+        requestAnimationFrame(scrollToBottom)
+
         const { value, done } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value, { stream: true });
-        if (!chunk) continue;
-        console.log(chunk);
+        fullText += chunk;
+      }
 
+      let index = 0;
+      const typingSpeed = 5;
+      const typingInterval = setInterval(() => {
         setChatList((prev) => {
           const updated = [...prev];
           const lastIndex = updated.length - 1;
           if (updated[lastIndex].type === "AI") {
             updated[lastIndex] = {
               ...updated[lastIndex],
-              content: updated[lastIndex].content + chunk,
+              content: fullText.slice(0, index),
             };
           }
           return updated;
         });
-      }
+
+        index++;
+        if (index > fullText.length) {
+          clearInterval(typingInterval);
+          setIsProcessing(false);
+        }
+      }, typingSpeed);
     } catch (e) {
-      setIsProcessing(false);
       addChat({ type: "AI", content: "Something went wrong." });
-    } finally {
       setIsProcessing(false);
     }
   }
@@ -108,7 +144,7 @@ ${message}
   };
 
   async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !isProcessing) {
       await handleSubmit();
     }
   }
@@ -137,6 +173,7 @@ ${message}
             </Button>
 
             <Input
+              autoFocus={true}
               placeholder="Ask me anything..."
               className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
               value={message}

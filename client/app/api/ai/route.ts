@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error("Streaming error:", err);
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response("Something went wrong.", { status: 500 });
   }
 }
